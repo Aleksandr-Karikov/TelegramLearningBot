@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using TelegramLearningBot.Data.Contexts;
 using TelegramLearningBot.Data.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace TelegramLearningBot.Data.Repositories
 {
-    class SetDbTheme : IDisposable
+    class SetDbWords:IDisposable
     {
         public TelegramLearningBotDbContext context;
-        public SetDbTheme()
+        public SetDbWords()
         {
             context = new TelegramLearningBotDbContext();
         }
@@ -21,27 +19,21 @@ namespace TelegramLearningBot.Data.Repositories
             context.Dispose();
             GC.SuppressFinalize(this);
         }
-
-        public void AddTheme(Themes theme)
+        public void AddWord(Words word)
         {
-            context.themes.Add(theme);
+            context.words.Add(word);
         }
 
-        public void DeleteTheme(int id)
+        public void DeleteWord(int id)
         {
-            var theme = context.themes.Find(id);
-            if (theme != null) context.themes.Remove(theme);
+            var Dict = context.words.Find(id);
+            if (Dict != null) context.words.Remove(Dict);
             context.SaveChanges();
         }
 
-        public IEnumerable<Themes> GetAllThemes()
+        public IEnumerable<Words> GetAllWords()
         {
-            return context.themes;
-        }
-        public int GetIdByName(string name,decimal userId)
-        {
-            var theme = context.themes.FirstOrDefault(c => c.Name == name && c.UsersId == userId);
-            return theme.Id;
+            return context.words;
         }
         public void Save()
         {
