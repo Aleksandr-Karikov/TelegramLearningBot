@@ -35,6 +35,31 @@ namespace TelegramLearningBot.Data.Repositories
         {
             return context.words;
         }
+
+        public List<string> GetListLearningWords(int dictId)
+        {
+            var words = context.words;
+            if (words == null) return null;
+            List<string> output = new List<string>();
+            foreach (Words word in words)
+            {
+                if (word.DictionaryiesId==dictId)
+                output.Add(word.LearningWord);
+            }
+            return output;
+        }
+        public List<string> GetListTranslateWords(int dictId)
+        {
+            var words = context.words;
+            if (words == null) return null;
+            List<string> output = new List<string>();
+            foreach (Words word in words)
+            {
+                if (word.DictionaryiesId == dictId)
+                    output.Add(word.TranslateOfWord);
+            }
+            return output;
+        }
         public void Save()
         {
             context.SaveChanges();

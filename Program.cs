@@ -24,6 +24,7 @@ namespace TelegramLearningBot
         private static Dictionary<decimal,int> UserTheme= new Dictionary<decimal, int>();
         private static Dictionary<int, int> ThemeDict = new Dictionary<int, int>();
         private static Dictionary<decimal, int> UserWord = new Dictionary<decimal, int>();
+        private static Dictionary<decimal, int> Userlearn = new Dictionary<decimal, int>();
         [Obsolete]
         static void Main(string[] args)
         {
@@ -210,6 +211,30 @@ namespace TelegramLearningBot
                         await client.SendTextMessageAsync(msg.Chat.Id, "Ваши cлова: ", replyMarkup: getUserWordsButtons());
                         await client.SendTextMessageAsync(msg.Chat.Id, GetListWords(ThemeDict[UserTheme[msg.From.Id]]));
                         break;
+                    case "Напишите перевод слова":
+                        using (SetDbWords wordRep = new SetDbWords())
+                        {
+                            List<string> learning = wordRep.GetListLearningWords(ThemeDict[UserTheme[msg.From.Id]]);
+                            List<string> translate = wordRep.GetListTranslateWords(ThemeDict[UserTheme[msg.From.Id]]);
+                            if (msg.Text == translate[Userlearn[msg.From.Id]])
+                            {
+                                await client.SendTextMessageAsync(msg.Chat.Id, "Правильно");
+                            }
+                            else
+                            {
+                                await client.SendTextMessageAsync(msg.Chat.Id, "Не правильно");
+
+                            }
+                            if (Userlearn[msg.From.Id] == learning.Count - 1)
+                            {
+                                await client.SendTextMessageAsync(msg.Chat.Id, $"Ответ: {translate[Userlearn[msg.From.Id]]}", replyMarkup: getUserWordsButtons());
+                                await client.SendTextMessageAsync(msg.Chat.Id, "Слова закончились", replyMarkup: getUserWordsButtons());
+                            }
+                            else await client.SendTextMessageAsync(msg.Chat.Id, $"Ответ: {translate[Userlearn[msg.From.Id]]}", replyMarkup: getLearningButtons());
+                            Userlearn[msg.From.Id] += 1;
+
+                            break;
+                        }
                 }
 
 
@@ -223,7 +248,7 @@ namespace TelegramLearningBot
                     switch (msg.Text)
                     {
                         case "/start":
-                            await client.SendTextMessageAsync(msg.Chat.Id, "Начнем обучение :) ", replyMarkup: getStartButtons());
+                            await client.SendTextMessageAsync(msg.Chat.Id, "Начнем обучение :) ", replyMarkup: getUserThemesButtons());
                             break;
                         case "Tемы":
                             await client.SendTextMessageAsync(msg.Chat.Id, "Ваши темы: ", replyMarkup: getUserThemesButtons());
@@ -253,17 +278,47 @@ namespace TelegramLearningBot
                         case "Удалить cловарь":
                             await client.SendTextMessageAsync(msg.Chat.Id, "Напишите имя словаря для удаления", replyMarkup: new ForceReplyMarkup { Selective = true });
                             break;
-                        case "Выбрать cлово":
-                            await client.SendTextMessageAsync(msg.Chat.Id, "Напишите имя слова", replyMarkup: new ForceReplyMarkup { Selective = true });
+                        case "Начать заучивание":
+                            using (SetDbWords wordRep = new SetDbWords())
+                            {
+                                if (Userlearn.ContainsKey(msg.From.Id))
+                                {
+                                    Userlearn[msg.From.Id] = 0;
+                                }
+                                else Userlearn.Add(msg.From.Id, 0);
+                                List<string> learning = wordRep.GetListLearningWords(ThemeDict[UserTheme[msg.From.Id]]);
+                                if (learning == null)
+                                {
+                                    await client.SendTextMessageAsync(msg.Chat.Id, "Возможно словарь пуст", replyMarkup: getUserWordsButtons());
+                                }
+
+                                List<string> translate = wordRep.GetListTranslateWords(ThemeDict[UserTheme[msg.From.Id]]);
+
+                                await client.SendTextMessageAsync(msg.Chat.Id, "Напишите перевод слова", replyMarkup: new ForceReplyMarkup { Selective = true });
+                                await client.SendTextMessageAsync(msg.Chat.Id, learning[Userlearn[msg.From.Id]]);
+                            }
+                            break;
+                        case "Продолжить":
+                            using (SetDbWords wordRep = new SetDbWords())
+                            {
+                                List<string> learning = wordRep.GetListLearningWords(ThemeDict[UserTheme[msg.From.Id]]);
+                                List<string> translate = wordRep.GetListTranslateWords(ThemeDict[UserTheme[msg.From.Id]]);
+                                await client.SendTextMessageAsync(msg.Chat.Id, "Напишите перевод слова", replyMarkup: new ForceReplyMarkup { Selective = true });
+                                await client.SendTextMessageAsync(msg.Chat.Id, learning[Userlearn[msg.From.Id]]);
+                            }
+                            
                             break;
                         case "Добавить слово":
                             await client.SendTextMessageAsync(msg.Chat.Id, "Напишите слово для заучивания", replyMarkup: new ForceReplyMarkup { Selective = true });
                             break;
                         case "Назад к словарям":
-                            await client.SendTextMessageAsync(msg.Chat.Id, "Селайте выбор", replyMarkup: getUserThemesButtons());
+                            await client.SendTextMessageAsync(msg.Chat.Id, "Селайте выбор", replyMarkup: getUserDictButtons());
                             break;
                         case "Удалить cлово":
                             await client.SendTextMessageAsync(msg.Chat.Id, "Напишите имя словаря для удаления", replyMarkup: new ForceReplyMarkup { Selective = true });
+                            break;
+                        case "Выйти":
+                            await client.SendTextMessageAsync(msg.Chat.Id, "Селайте выбор", replyMarkup: getUserDictButtons());
                             break;
                         default:
                             await client.SendTextMessageAsync(msg.Chat.Id, "Такого варианта нет :( ", replyMarkup: getStartButtons());
@@ -364,7 +419,7 @@ namespace TelegramLearningBot
             {
                 Keyboard = new List<List<KeyboardButton>>
                 {
-                    new List<KeyboardButton> { new KeyboardButton { Text = "Добавить тему" }, new KeyboardButton { Text = "Удалить тему" }, new KeyboardButton { Text = "Назад" }, new KeyboardButton { Text = "Выбрать" } }
+                    new List<KeyboardButton> { new KeyboardButton { Text = "Добавить тему" }, new KeyboardButton { Text = "Удалить тему" }, new KeyboardButton { Text = "Выбрать" } }
                     
                 }
             };
@@ -391,6 +446,19 @@ namespace TelegramLearningBot
                 Keyboard = new List<List<KeyboardButton>>
                 {
                     new List<KeyboardButton> { new KeyboardButton { Text = "Добавить слово" }, new KeyboardButton { Text = "Удалить cлово" }, new KeyboardButton { Text = "Назад к словарям" }, new KeyboardButton { Text = "Начать заучивание" } }
+
+                }
+            };
+
+        }
+
+        private static IReplyMarkup getLearningButtons()
+        {
+            return new ReplyKeyboardMarkup()
+            {
+                Keyboard = new List<List<KeyboardButton>>
+                {
+                    new List<KeyboardButton> { new KeyboardButton { Text = "Продолжить" }, new KeyboardButton { Text = "Выйти" }, }
 
                 }
             };
